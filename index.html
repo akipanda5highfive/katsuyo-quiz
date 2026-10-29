@@ -76,6 +76,9 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 .slot .big { font-size: 1.55rem; font-weight: 500; line-height: 1.25; overflow-wrap: anywhere; }
 .slot .sub { font-size: .8rem; color: var(--muted); }
 .slot .blank { color: var(--line); font-size: 1.4rem; letter-spacing: .3em; }
+.register { margin: 6px 0 0; display: inline-block; font-size: .82rem; font-weight: 700; padding: 1px 10px; border-radius: 99px; background: var(--ink-soft); color: var(--ink); }
+.slot .want { margin-top: 4px; font-size: .88rem; line-height: 1.5; color: var(--accent); }
+.slot .want b { font-weight: 700; }
 .slot .hint { font-size: .85rem; color: var(--accent); font-weight: 700; }
 .spk { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); display: grid; place-items: center; }
 .spk:active { background: var(--ink); color: var(--bg); }
@@ -124,6 +127,7 @@ details.set summary { cursor: pointer; padding: 12px 0; font-weight: 700; color:
     <div>
       <p class="prompt-label">この日本語を、韓国語で言うと？</p>
       <p class="prompt" id="prompt"></p>
+      <p class="register" id="register" hidden></p>
     </div>
     <div class="slots">
       <div class="slot" id="slot1">
@@ -187,6 +191,33 @@ const saveProg = () => st.set('kq-prog', JSON.stringify(prog));
 const Q = [];
 DATA.forEach(e => e.r.forEach((r, i) => Q.push({ id: e.t + e.n + ':' + i, e, lab: r[0], ko: r[1], jp: r[2] })));
 
+const LAB_JP = {
+  '-아/어요': 'やわらかい丁寧語（해요体）',
+  '-아서/어서': '〜して／〜ので',
+  '-아/어도 돼요': '〜してもいいです',
+  '-(으)면': '〜なら',
+  '-(으)ㄹ 거예요': '〜するつもりです／〜でしょう',
+  '-(으)ㄹ 수 있어요': '〜することができます',
+  '-고 있어요': '〜しています',
+  '-ㅂ/습니다': 'かたい丁寧語（합니다体）',
+  '-(으)십니다': '尊敬のかたい丁寧語（〜なさいます）',
+  '-(으)ㅂ시다': '〜しましょう',
+  '-았/었어요': '過去・やわらかい丁寧語（〜した／〜しました）',
+  '-아/어 보다': '〜してみる',
+  '-게 되다': '〜するようになる／〜ことになる',
+  '-지요 (죠)': '〜ですよね',
+  '-네요': '〜ですね',
+  '現在連体形': '〜する＋名詞（現在）',
+  '過去連体形': '〜した＋名詞（過去）',
+  '未来連体形': '〜する予定の＋名詞（未来）',
+  '-아서/어서 ': '',
+  '-아/어도': '〜しても／〜くても',
+  '-지만': '〜けれど',
+  '-(으)ㄴ데 / -는데': '〜のに／〜ですが',
+  '-지 않아요': '〜ません（否定・해요体）',
+  '-게': '〜く／〜に（副詞）',
+};
+const REGISTER = { '-아/어요': 'やわらかい丁寧語', '-ㅂ/습니다': 'かたい丁寧語' };
 const $ = id => document.getElementById(id);
 let cur = null, revealed = false, hint = 0, showBase = false, last = null, asked = 0, good = 0;
 
@@ -273,6 +304,8 @@ function render() {
   $('kind').textContent = e.t === 'v' ? '動詞' : '形容詞';
   $('qno').textContent = '';
   $('prompt').textContent = cur.jp;
+  const rg = REGISTER[cur.lab];
+  $('register').hidden = !rg; $('register').textContent = rg || '';
   const s1 = $('slot1'), s2 = $('slot2');
   if (!revealed) {
     s2.classList.remove('filled');
@@ -297,7 +330,7 @@ function render() {
   } else {
     s1.classList.add('filled'); s2.classList.add('filled');
     $('body1').innerHTML = `<div class="big ko">${esc(e.k)}</div><div class="sub">${esc(e.ti)}</div>`;
-    $('body2').innerHTML = `<div class="big ko">${esc(cur.ko)}</div><div class="sub ko">${esc(cur.lab)}</div>`;
+    $('body2').innerHTML = `<div class="big ko">${esc(cur.ko)}</div><div class="sub"><span class="ko">${esc(cur.lab)}</span>${LAB_JP[cur.lab] ? '　' + esc(LAB_JP[cur.lab]) : ''}</div>`;
     $('spk1').hidden = false; $('spk2').hidden = false;
     const n = $('note');
     n.hidden = false;
