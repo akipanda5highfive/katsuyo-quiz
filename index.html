@@ -90,10 +90,11 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 .note p { margin: 0; font-size: .85rem; line-height: 1.6; font-family: var(--font-ko), var(--font-jp); }
 
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }
-.btn { flex: 1 1 140px; min-height: 52px; border-radius: 12px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font-weight: 700; padding: 8px 14px; }
+.btn { flex: 1 1 110px; min-height: 52px; border-radius: 12px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font-weight: 700; padding: 8px 14px; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
 .btn.ok { background: var(--ok); border-color: var(--ok); color: #fff; }
 .btn.quiet { border-color: var(--line); color: var(--muted); font-weight: 500; }
+.btn[disabled] { opacity: .45; cursor: default; }
 :root[data-theme="dark"] .btn.ok { color: #06180f; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.ok { color: #06180f; } }
 
@@ -187,7 +188,7 @@ const Q = [];
 DATA.forEach(e => e.r.forEach((r, i) => Q.push({ id: e.t + e.n + ':' + i, e, lab: r[0], ko: r[1], jp: r[2] })));
 
 const $ = id => document.getElementById(id);
-let cur = null, revealed = false, hint = 0, last = null, asked = 0, good = 0;
+let cur = null, revealed = false, hint = 0, showBase = false, last = null, asked = 0, good = 0;
 
 function pool() {
   const v = $('fV').checked, a = $('fA').checked;
@@ -274,14 +275,24 @@ function render() {
   $('prompt').textContent = cur.jp;
   const s1 = $('slot1'), s2 = $('slot2');
   if (!revealed) {
-    s1.classList.remove('filled'); s2.classList.remove('filled');
-    $('spk1').hidden = true; $('spk2').hidden = true; $('note').hidden = true;
-    $('body1').innerHTML = hint >= 2 ? `<div class="hint ko">${esc(e.k.charAt(0))} …</div>` : '<div class="blank">？？？</div>';
+    s2.classList.remove('filled');
+    $('spk2').hidden = true; $('note').hidden = true;
+    if (showBase) {
+      s1.classList.add('filled');
+      $('body1').innerHTML = `<div class="big ko">${esc(e.k)}</div><div class="sub">${esc(e.ti)}</div>`;
+      $('spk1').hidden = false;
+    } else {
+      s1.classList.remove('filled');
+      $('body1').innerHTML = '<div class="blank">？？？</div>';
+      $('spk1').hidden = true;
+    }
     $('body2').innerHTML = hint >= 1 ? `<div class="hint">語尾：<span class="ko">${esc(cur.lab)}</span></div>` : '<div class="blank">？？？</div>';
     $('actions').innerHTML =
-      `<button class="btn quiet" id="bHint" type="button">${hint >= 2 ? 'ヒントはここまで' : 'ヒント'}</button>` +
+      `<button class="btn quiet" id="bHint" type="button"${hint >= 1 ? ' disabled' : ''}>語尾ヒント</button>` +
+      `<button class="btn quiet" id="bBase" type="button"${showBase ? ' disabled' : ''}>原形を見る</button>` +
       '<button class="btn primary" id="bShow" type="button">答えを見る</button>';
-    $('bHint').onclick = () => { if (hint < 2) { hint++; render(); } };
+    $('bHint').onclick = () => { hint = 1; render(); };
+    $('bBase').onclick = () => { showBase = true; render(); say(cur.e.k); };
     $('bShow').onclick = reveal;
   } else {
     s1.classList.add('filled'); s2.classList.add('filled');
@@ -301,7 +312,7 @@ function render() {
 }
 function reveal() {
   revealed = true; render();
-  if ($('fAuto').checked) say(cur.e.k, () => setTimeout(() => cur && revealed && say(cur.ko), 250));
+  if ($('fAuto').checked) { if (showBase) say(cur.ko); else say(cur.e.k, () => setTimeout(() => cur && revealed && say(cur.ko), 250)); }
 }
 function grade(ok) {
   const p = prog[cur.id] || { ok: 0, ng: 0, l: '' };
@@ -312,7 +323,7 @@ function grade(ok) {
 function next() {
   try { speechSynthesis.cancel(); } catch (e) {}
   if (cur) last = cur.id;
-  cur = pick(); revealed = false; hint = 0; render();
+  cur = pick(); revealed = false; hint = 0; showBase = false; render();
   window.scrollTo({ top: 0 });
 }
 
